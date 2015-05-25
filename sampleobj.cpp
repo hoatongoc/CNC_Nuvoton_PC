@@ -179,23 +179,33 @@ void SampleObj::gotoXYZ(float Xval, float Yval, float Zval, bool isFeedrate)
   else dY = step_y;
   char dir_x = sign(dX);  // dir  0 <---> CCW, lùi ; 1 <---> CW, tiến
   char dir_y = sign(dY);
-  moveMotor(abs(dX),dir_x,abs(dY), dir_y, isFeedrate);
+
+  unsigned short speed_x = DEF_SPEED;
+  unsigned short speed_y;
+  if(!dY || !dX) speed_y = DEF_SPEED;
+  else speed_y = speed_x * ((float)abs(dY)/(float)abs(dX));
+  moveMotor(abs(dX),dir_x,speed_x, abs(dY), dir_y,speed_y, isFeedrate);
 }
 
 
 
 
 
-void SampleObj::moveMotor(unsigned short x, char dirX,unsigned short y, char dirY, bool isFeedrate) // thêm bool isFeedrate
+void SampleObj::moveMotor(unsigned short x, char dirX, unsigned short speedX, unsigned short y, char dirY, unsigned short speedY, bool isFeedrate) // thêm bool isFeedrate
 {
 
     char lowX;
     char lowY;
     char highX;
     char highY;
+    char lowS_X; //low speed part
+    char highS_X; //high speed part
+    char lowS_Y;
+    char highS_Y;
     Convert_u16_u8(x,highX,lowX);
     Convert_u16_u8(y,highY,lowY);
-
+    Convert_u16_u8(speedX,highS_X,lowS_X);
+    Convert_u16_u8(speedY,highS_Y,lowS_Y);
     if(handle) {
         send_buf[0] = 0x0;
         send_buf[1] = 0x13;
@@ -204,9 +214,13 @@ void SampleObj::moveMotor(unsigned short x, char dirX,unsigned short y, char dir
         send_buf[4] = highX;
         send_buf[5] = lowX;
         send_buf[6] = dirX;
-        send_buf[7] = highY;
-        send_buf[8] = lowY;
-        send_buf[9] = dirY;
+        send_buf[7] = highS_X;
+        send_buf[8] = lowS_X;
+        send_buf[9] = highY;
+        send_buf[10] = lowY;
+        send_buf[11] = dirY;
+        send_buf[12] = highS_Y;
+        send_buf[13] = lowS_Y;
         res = hid_write(handle, send_buf, 65);
     }
     //bool isFeedrate   0 <---> MAXRATE, 1 <---> FEEDRATE

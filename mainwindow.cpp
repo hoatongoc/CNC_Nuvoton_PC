@@ -250,9 +250,13 @@ void MainWindow::on_stepBtn_clicked()
         buf[4] = high;
         buf[5] = low;
         buf[6] = dir_x;
-        buf[7] = high;
-        buf[8] = low;
-        buf[9] = dir_y;
+        buf[7] = 0x01;
+        buf[8] = 0xF4;
+        buf[9] = high;
+        buf[10] = low;
+        buf[11] = dir_y;
+        buf[12] = 0x01;
+        buf[13] = 0xF4;
 
         res = hid_write(handle, buf, 65);
         if (res == -1) {

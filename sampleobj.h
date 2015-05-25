@@ -29,7 +29,7 @@ public:
     void processCommand(QString cmd, float cmdval, float Xval, float Yval, float Zval, int line);
     void gotoXYZ(float Xval, float Yval, float Zval, bool isFeedrate);
     void reqCurrentPos();
-    void moveMotor(unsigned short x, char dirX,unsigned short y, char dirY, bool isFeedrate);
+    void SampleObj::moveMotor(unsigned short x, char dirX, unsigned short speedX, unsigned short y, char dirY, unsigned short speedY, bool isFeedrate);
     void sendWorkingStatus(char status);
     void getStatus();
 
