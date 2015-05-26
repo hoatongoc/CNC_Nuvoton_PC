@@ -24,7 +24,6 @@ bool lock = false;
 QStringList commandList;
 int lineIndex=0;
 char boardStatus = WAIT;
-
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -67,30 +66,32 @@ void MainWindow::updateGUI() {
     ui->YlabelDir->setText(QString::number(buffer[15]));
     ui->YlabelEnable->setText(QString::number(buffer[16]));
     ui->YlabelSpeed->setText(QString::number(Convert_u8_u16(buffer[17],buffer[18])));
-
-    if(boardStatus == NOT_FINISHED) {
-        char xEnable = buffer[8];
-        char yEnable = buffer[16];
-
-        if(xEnable == PAUSE &&  yEnable == PAUSE) {
-
-            SystemStatus = FINISHED;
-            objtest->sendWorkingStatus(FINISHED);
+    ui->ZlabelEnable->setText(QString::number(buffer[19]));
+    ui->ZlabelRatio->setText(QString::number(buffer[20]));
+    if(lineIndex <= commandList.length()) {
+        if(boardStatus == NOT_FINISHED) {
+            char xEnable = buffer[8];
+            char yEnable = buffer[16];
+            char zEnable = buffer[19];
+            if(xEnable == PAUSE &&  yEnable == PAUSE && zEnable == PAUSE) {
+                SystemStatus = FINISHED;
+                objtest->sendWorkingStatus(FINISHED);
+            }
+            lock = false;
         }
-        lock = false;
-    }
-    else if (boardStatus == FINISHED) {
-        SystemStatus =  WAIT;
-        objtest->sendWorkingStatus(WAIT);
-    }
-    else if (boardStatus == WAIT) { // boardStatus == WAIT
-        //process command
-        if(lock == false) {
-        std::vector<GCode> gcode = ProcessCommand();
-        SystemStatus = NOT_FINISHED;
-        lock = true;
-        objtest->processCommand(gcode.at(0).command,gcode.at(0).value,gcode.at(1).value,gcode.at(2).value,0.0,0);
-        objtest->sendWorkingStatus(NOT_FINISHED);
+        else if (boardStatus == FINISHED) {
+            SystemStatus =  WAIT;
+            objtest->sendWorkingStatus(WAIT);
+        }
+        else if (boardStatus == WAIT) { // boardStatus == WAIT
+            //process command
+            if(lock == false) {
+            std::vector<GCode> gcode = ProcessCommand();
+            SystemStatus = NOT_FINISHED;
+            lock = true;
+            objtest->processCommand(gcode.at(0).command,gcode.at(0).value,gcode.at(1).value,gcode.at(2).value,gcode.at(3).value,0);
+            objtest->sendWorkingStatus(NOT_FINISHED);
+            }
         }
     }
 
@@ -368,6 +369,41 @@ void MainWindow::on_runDrawBtn_clicked()
 }
 
 
+void MainWindow::on_ZRatioBtn_clicked()
+{
+    char ratio = ui->ZRatioLineEdit->text().toUShort();
+    int res;
+    unsigned char buf[65];
+
+    if (!handle)
+    {
+        QMessageBox mess;
+        mess.setText("OPEN ERROR");
+        mess.exec();
+    }
+    else
+    {
+        buf[0] = 0x0;
+        buf[1] = 0x13;
+        buf[2] = 0x04;
+        buf[3] = CMD_ROTATE_SERVO;
+        buf[4] = SERVO_Z;
+        buf[5] = ratio;
+        buf[6] = 0x0;
+        buf[7] = 0x0;
+        buf[8] = 0x0;
+        buf[9] = 0x0;
+
+        res = hid_write(handle, buf, 65);
+        if (res == -1) {
+            QMessageBox mess;
+            mess.setText("ERROR HAPPENED");
+            mess.exec();
+        }
+    }
+}
+
+
 void MainWindow::InitializeCommands(QStringList& cList, QString sourceText) {
     cList = sourceText.split(QRegularExpression("[\r\n]"),QString::SkipEmptyParts);
 }
@@ -375,18 +411,19 @@ void MainWindow::InitializeCommands(QStringList& cList, QString sourceText) {
 
 std::vector<GCode>MainWindow::ProcessCommand() {
 
-    std::vector<GCode> gCodeList (3);
+    std::vector<GCode> gCodeList (4);
 
     for(int i = lineIndex;i<commandList.length();i++) // moi i la 1 line
     {
         lineIndex++;
-        if(commandList.at(i).left(1)==";") continue; // new nhu line bat dau = dau ; thi line do la comment, skip qua
-        QStringList element = commandList.at(i).split(QRegularExpression("G+|\\sX+|\\sY"),QString::SkipEmptyParts);
+        if(commandList.at(i).left(1)==";" ||commandList.at(i).left(1)=="(" ||commandList.at(i).left(1)=="" ) continue; // new nhu line bat dau = dau ; thi line do la comment, skip qua
+        ui->textExtract->append(commandList.at(i));
+        QStringList element = commandList.at(i).split(QRegularExpression("G+|\\sX+|\\sY+|\\sZ"),QString::SkipEmptyParts);
         // element la tap hop các thanh phan trong 1 line
-        for(int y=0;y<element.length();y++) // check cac thanh phan cua line theo thu tu G X Y
+        for(int y=0;y<element.length();y++) // check cac thanh phan cua line theo thu tu G X Y Z
         {
 //             QString test = element.at(y);
-//             ui->textExtract->append(test);
+
 
             switch (y){
             case 0:
@@ -395,8 +432,8 @@ std::vector<GCode>MainWindow::ProcessCommand() {
                 g->command = "G";
                 g->value = element.at(y).toFloat();
                 qDebug()<<element.at(y);
-                ui->textExtract->append(g->command);
-                ui->textExtract->append(QString::number(g->value));
+//                ui->textExtract->append(g->command);
+//                ui->textExtract->append(QString::number(g->value));
                 //command name
                 break;
             }
@@ -405,8 +442,8 @@ std::vector<GCode>MainWindow::ProcessCommand() {
                 GCode *g = &gCodeList.at(y);
                 g->command = "X";
                 g->value = element.at(y).toFloat();
-                ui->textExtract->append(g->command);
-                ui->textExtract->append(QString::number(g->value));
+//                ui->textExtract->append(g->command);
+//                ui->textExtract->append(QString::number(g->value));
                 // X coor
                 qDebug() << element.at(y);
                 break;
@@ -416,12 +453,18 @@ std::vector<GCode>MainWindow::ProcessCommand() {
                 GCode *g = &gCodeList.at(y);
                 g->command = "Y";
                 g->value = element.at(y).toFloat();
-                ui->textExtract->append(g->command);
-                ui->textExtract->append(QString::number(g->value));
+//                ui->textExtract->append(g->command);
+//                ui->textExtract->append(QString::number(g->value));
 
                  // Y coor
                 qDebug()<<element.at(y);
                 break;
+            }
+            case 3: {
+                GCode *g = &gCodeList.at(y);
+                g->command = "Z";
+                g->value = element.at(y).toFloat();
+                qDebug()<<element.at(y);
             }
             }
 
@@ -432,3 +475,5 @@ std::vector<GCode>MainWindow::ProcessCommand() {
     }
     return gCodeList;
 }
+
+

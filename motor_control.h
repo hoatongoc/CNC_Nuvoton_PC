@@ -17,6 +17,7 @@
 #define CMD_SETHOME			0xA4
 #define CMD_MOVEHOME 		0xA5
 #define CMD_SETSTATUS   	0xA6
+#define CMD_ROTATE_SERVO 	0xA7
 #define CMD_MOVE 			0xAA
 #define CMD_CLR             0xAB
 #define CMD_DIR 			0xAC

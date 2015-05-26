@@ -27,10 +27,11 @@ public:
     //std::vector<int> getBuf();
     void startTimer();
     void processCommand(QString cmd, float cmdval, float Xval, float Yval, float Zval, int line);
-    void gotoXYZ(float Xval, float Yval, float Zval, bool isFeedrate);
+    void gotoXYZ(float Xval, float Yval, float Zval);
     void reqCurrentPos();
-    void SampleObj::moveMotor(unsigned short x, char dirX, unsigned short speedX, unsigned short y, char dirY, unsigned short speedY, bool isFeedrate);
+    void SampleObj::moveMotor(unsigned short x, char dirX, unsigned short speedX, unsigned short y, char dirY, unsigned short speedY,float z_ratio);
     void sendWorkingStatus(char status);
+    void rotateServo(char sc_name, float ratio);
     void getStatus();
 
     unsigned short getCurrent_stepX() const;

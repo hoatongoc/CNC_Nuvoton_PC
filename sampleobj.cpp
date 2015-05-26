@@ -97,10 +97,10 @@ void SampleObj::processCommand(QString cmd, float cmdval, float Xval, float Yval
     {
         switch ((int)cmdval) {
         case 0: //Rapid Motion
-            gotoXYZ(Xval, Yval, Zval, 0);
+            gotoXYZ(Xval, Yval, 0);
             break;
         case 1: //Linear Motion
-            gotoXYZ(Xval, Yval, Zval, 1);
+            gotoXYZ(Xval, Yval, Zval);
             break;
         {
 //        case 02: //Circular move CW
@@ -165,7 +165,7 @@ void SampleObj::processCommand(QString cmd, float cmdval, float Xval, float Yval
     }
 }
 
-void SampleObj::gotoXYZ(float Xval, float Yval, float Zval, bool isFeedrate)
+void SampleObj::gotoXYZ(float Xval, float Yval, float Zval)
 {
   unsigned short step_x = convertToStep(Xval,STEP_PER_MM_X);
   unsigned short step_y = convertToStep(Yval,STEP_PER_MM_Y);
@@ -184,15 +184,39 @@ void SampleObj::gotoXYZ(float Xval, float Yval, float Zval, bool isFeedrate)
   unsigned short speed_y;
   if(!dY || !dX) speed_y = DEF_SPEED;
   else speed_y = speed_x * ((float)abs(dY)/(float)abs(dX));
-  moveMotor(abs(dX),dir_x,speed_x, abs(dY), dir_y,speed_y, isFeedrate);
+  moveMotor(abs(dX),dir_x,speed_x, abs(dY), dir_y,speed_y, Zval);
 }
 
 
+void SampleObj::rotateServo(char sc_name, float ratio) {
+
+    char def_ratio;
+    if(ratio>0) def_ratio = 1;
+    else def_ratio = 3;
+
+    if (handle)
+    {
+        send_buf[0] = 0x0;
+        send_buf[1] = 0x13;
+        send_buf[2] = 0x04;
+        send_buf[3] = CMD_ROTATE_SERVO;
+        send_buf[4] = sc_name;
+        send_buf[5] = def_ratio;
+        send_buf[6] = 0x0;
+        send_buf[7] = 0x0;
+        send_buf[8] = 0x0;
+        send_buf[9] = 0x0;
+        res = hid_write(handle, send_buf, 65);
+
+    }
+}
 
 
-
-void SampleObj::moveMotor(unsigned short x, char dirX, unsigned short speedX, unsigned short y, char dirY, unsigned short speedY, bool isFeedrate) // thêm bool isFeedrate
+void SampleObj::moveMotor(unsigned short x, char dirX, unsigned short speedX, unsigned short y, char dirY, unsigned short speedY, float z_ratio) // thêm bool isFeedrate
 {
+    char def_ratio;
+    if(z_ratio>0) def_ratio = 1;
+    else def_ratio = 3;
 
     char lowX;
     char lowY;
@@ -221,6 +245,7 @@ void SampleObj::moveMotor(unsigned short x, char dirX, unsigned short speedX, un
         send_buf[11] = dirY;
         send_buf[12] = highS_Y;
         send_buf[13] = lowS_Y;
+        send_buf[14] = def_ratio;
         res = hid_write(handle, send_buf, 65);
     }
     //bool isFeedrate   0 <---> MAXRATE, 1 <---> FEEDRATE

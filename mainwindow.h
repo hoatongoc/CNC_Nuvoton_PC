@@ -39,6 +39,8 @@ private slots:
 
     void on_runDrawBtn_clicked();
 
+    void on_ZRatioBtn_clicked();
+
 private:
     Ui::MainWindow *ui;
 };
