@@ -167,8 +167,8 @@ void SampleObj::processCommand(QString cmd, float cmdval, float Xval, float Yval
 
 void SampleObj::gotoXYZ(float Xval, float Yval, float Zval)
 {
-  unsigned short step_x = convertToStep(Xval,STEP_PER_MM_X);
-  unsigned short step_y = convertToStep(Yval,STEP_PER_MM_Y);
+  unsigned short step_x = convertToStep(QString::number(Xval,'f',2).toFloat(),STEP_PER_MM_X);
+  unsigned short step_y = convertToStep(QString::number(Yval,'f',2).toFloat(),STEP_PER_MM_Y);
   short dX;
   short dY;
   if(Xval >=0)
@@ -183,7 +183,17 @@ void SampleObj::gotoXYZ(float Xval, float Yval, float Zval)
   unsigned short speed_x = DEF_SPEED;
   unsigned short speed_y;
   if(!dY || !dX) speed_y = DEF_SPEED;
-  else speed_y = speed_x * ((float)abs(dY)/(float)abs(dX));
+  else {
+      float yxRatio = ((float)abs(dY)/(float)abs(dX));
+      if(yxRatio >100) speed_x = speed_x/100;
+      else
+      if(yxRatio >10) speed_x = speed_x/10;
+      else if(yxRatio > 5) speed_x = speed_x/5;
+      speed_y = speed_x * yxRatio;
+      if (speed_y == 0) speed_y = 1;
+      if (speed_x == 0) speed_x = 1;
+
+  }
   moveMotor(abs(dX),dir_x,speed_x, abs(dY), dir_y,speed_y, Zval);
 }
 
@@ -207,7 +217,6 @@ void SampleObj::rotateServo(char sc_name, float ratio) {
         send_buf[8] = 0x0;
         send_buf[9] = 0x0;
         res = hid_write(handle, send_buf, 65);
-
     }
 }
 

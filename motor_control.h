@@ -7,7 +7,7 @@
 #define MAX_STEP_X 14000
 #define MAX_STEP_Y 14000
 
-#define DEF_SPEED 800
+#define DEF_SPEED 300
 #define MAX_SPEED 20000
 
 #define CMD_GET_STATUS  	0xA0
